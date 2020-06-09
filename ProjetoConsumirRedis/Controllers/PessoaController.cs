@@ -13,7 +13,7 @@ namespace ProjetoConsumirRedis.Controllers
     public class PessoaController : ControllerBase
     {
         private readonly IDistributedCache _cache;
-        private const string CHAVE_PESSOAS = "CHAVE_PESSOAS";
+        private const string CHAVE_PESSOAS = "_CHAVE_TESTE_REDIS";
 
         public PessoaController(IDistributedCache cache)
         {
@@ -41,6 +41,7 @@ namespace ProjetoConsumirRedis.Controllers
         public async Task<IActionResult> PostPessoa([FromBody] Pessoa pessoa)
         {
             var cacheSettings = new DistributedCacheEntryOptions();
+
             cacheSettings.SetAbsoluteExpiration(TimeSpan.FromMinutes(2));
 
             var pessoaInput = JsonConvert.SerializeObject(pessoa);
@@ -52,12 +53,14 @@ namespace ProjetoConsumirRedis.Controllers
 
         private async Task<IEnumerable<Pessoa>> ObterPessoas()
         {
+            // Verifico se a chave existe no Redis
             var dataCache = await _cache.GetStringAsync(CHAVE_PESSOAS);
 
-
+            //Configs de cache
             var cacheSettings = new DistributedCacheEntryOptions();
             cacheSettings.SetAbsoluteExpiration(TimeSpan.FromMinutes(2));
 
+            // Se a chave não existe no Redis eu insiro meus Mocs.
             if (string.IsNullOrWhiteSpace(dataCache))
             {
                 var pessoasFromDatabase = MockPessoas();
@@ -69,6 +72,7 @@ namespace ProjetoConsumirRedis.Controllers
                 return await Task.FromResult(pessoasFromDatabase);
             }
 
+            //Quando existem dados no Redis eu os consulto e retorno ao solicitante.
             var pessoasFromCache = JsonConvert.DeserializeObject<IEnumerable<Pessoa>>(dataCache);
 
             return await Task.FromResult(pessoasFromCache);
